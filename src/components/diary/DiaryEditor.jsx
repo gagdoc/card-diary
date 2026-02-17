@@ -145,12 +145,15 @@ export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
         if (!images || images.length === 0) return null;
 
         return (
-            <div className="flex gap-3 overflow-x-auto pb-4 snap-x scrollbar-hide py-2">
+            <div className={images.length === 1 && !isInputArea ? "" : "flex gap-3 overflow-x-auto pb-4 snap-x scrollbar-hide py-2"}>
                 {images.map((img, index) => (
-                    <div key={index} className="relative flex-shrink-0 snap-center group">
+                    <div key={index} className={cn(
+                        "relative group",
+                        images.length === 1 && !isInputArea ? "w-full" : "flex-shrink-0 snap-center"
+                    )}>
                         <div className={cn(
                             "rounded-xl overflow-hidden border border-gray-200 shadow-sm",
-                            isInputArea ? "w-24 h-24" : "w-full max-w-[300px] h-64"
+                            isInputArea ? "w-24 h-24" : (images.length === 1 ? "w-full h-72" : "w-64 h-64")
                         )}>
                             <DriveImage
                                 src={img}
