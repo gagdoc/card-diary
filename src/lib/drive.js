@@ -4,6 +4,7 @@ const DRIVE_FILE_NAME = 'diary_entries.json';
 
 // Helper to find our app folder
 export const findAppFolder = async (token) => {
+    if (token === 'mock-google-access-token') return 'mock-folder-id';
     try {
         const q = `mimeType='application/vnd.google-apps.folder' and name='${DRIVE_FOLDER_NAME}' and trashed=false`;
         const response = await fetch(
@@ -27,6 +28,7 @@ export const findAppFolder = async (token) => {
 
 // Helper to create our app folder
 export const createAppFolder = async (token) => {
+    if (token === 'mock-google-access-token') return 'mock-folder-id';
     try {
         const metadata = {
             name: DRIVE_FOLDER_NAME,
@@ -53,6 +55,7 @@ export const createAppFolder = async (token) => {
 // For simplicity and safety, let's keep it in root for now alongside Data folder, or we can nest it. 
 // Let's create it.
 export const findImagesFolder = async (token) => {
+    if (token === 'mock-google-access-token') return 'mock-images-folder-id';
     try {
         const q = `mimeType='application/vnd.google-apps.folder' and name='${DRIVE_IMAGES_FOLDER_NAME}' and trashed=false`;
         const response = await fetch(
@@ -75,6 +78,7 @@ export const findImagesFolder = async (token) => {
 };
 
 export const createImagesFolder = async (token) => {
+    if (token === 'mock-google-access-token') return 'mock-images-folder-id';
     try {
         const metadata = {
             name: DRIVE_IMAGES_FOLDER_NAME,
@@ -100,6 +104,7 @@ export const createImagesFolder = async (token) => {
 
 // Helper to find our data file in the folder
 export const findDataFile = async (token, folderId) => {
+    if (token === 'mock-google-access-token') return 'mock-data-file-id';
     try {
         const q = `name='${DRIVE_FILE_NAME}' and '${folderId}' in parents and trashed=false`;
         const response = await fetch(
@@ -178,6 +183,9 @@ export const ensureImagesFolder = async (token) => {
 
 // Save Image to Drive
 export const saveImageToDrive = async (token, base64Image, existingFolderId = null) => {
+    if (token === 'mock-google-access-token') {
+        return `mock-image-${Date.now()}`;
+    }
     try {
         let folderId = existingFolderId;
 
@@ -214,6 +222,11 @@ export const saveImageToDrive = async (token, base64Image, existingFolderId = nu
 }
 
 export const getImageFromDrive = async (token, fileId) => {
+    if (token === 'mock-google-access-token') {
+        // In mock mode, we might just return the ID if it's already a base64 or a placeholder
+        if (fileId.startsWith('mock-image-')) return null; // Can't easily recover base64 from ID in mock mode without more complex storage
+        return null;
+    }
     try {
         const response = await fetch(
             `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
@@ -234,6 +247,7 @@ export const getImageFromDrive = async (token, fileId) => {
 
 // Helper: Get file metadata (e.g., thumbnailLink)
 export const getFileMetadata = async (token, fileId, fields = 'id, name, thumbnailLink, webContentLink') => {
+    if (token === 'mock-google-access-token') return { id: fileId, name: 'mock-file' };
     try {
         const response = await fetch(
             `https://www.googleapis.com/drive/v3/files/${fileId}?fields=${fields}`,
@@ -253,6 +267,9 @@ export const getFileMetadata = async (token, fileId, fields = 'id, name, thumbna
 
 // Save data to Drive (Create or Update)
 export const saveToDrive = async (token, data) => {
+    if (token === 'mock-google-access-token') {
+        return { success: true };
+    }
     try {
         let folderId = await findAppFolder(token);
         if (!folderId) {
@@ -267,7 +284,6 @@ export const saveToDrive = async (token, data) => {
 
         if (fileId) {
             const result = await uploadFileContent(token, fileId, data);
-            console.log('Saved to Drive:', result);
             return result;
         }
     } catch (error) {
@@ -277,6 +293,9 @@ export const saveToDrive = async (token, data) => {
 
 // Load data from Drive
 export const loadFromDrive = async (token) => {
+    if (token === 'mock-google-access-token') {
+        return null;
+    }
     try {
         const folderId = await findAppFolder(token);
         if (!folderId) return null;
@@ -299,7 +318,6 @@ export const loadFromDrive = async (token) => {
         }
 
         const data = await response.json();
-        console.log('Loaded from Drive:', data);
         return data;
     } catch (error) {
         console.error('Error loading from drive:', error);

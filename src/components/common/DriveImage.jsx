@@ -71,7 +71,8 @@ export const DriveImage = ({ src, alt, className, onClick, ...props }) => {
         return () => {
             isMounted = false;
         };
-    }, [srcId, isDriveType, isUrl, srcString, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [srcId, isDriveType, isUrl, srcString, token]); // src의 파생값들로 구성 — src 직접 추가 시 객체 참조 문제 발생
 
     if (loading) {
         return (

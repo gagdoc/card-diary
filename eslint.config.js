@@ -23,7 +23,10 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // ^[A-Z_]: 대문자/언더스코어 시작 변수 허용
+      // ^motion$: framer-motion의 motion은 JSX member expression(<motion.div>)으로 사용되나
+      //           ESLint가 JSX namespace 사용을 감지하지 못하는 false positive 방지
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]|^motion$' }],
     },
   },
 ])

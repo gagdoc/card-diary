@@ -19,8 +19,7 @@ export const createPickerSession = async (oauthToken) => {
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to create picker session:', response.status, errorData);
-        throw new Error(`Failed to create picker session: ${response.status}`);
+        throw new Error(`Failed to create picker session: ${response.status} ${JSON.stringify(errorData)}`);
     }
 
     return await response.json();
@@ -101,7 +100,6 @@ export const openGooglePhotoPicker = async (oauthToken) => {
     try {
         // Step 1: Create session (popup is already open)
         const session = await createPickerSession(oauthToken);
-        console.log('Picker session created:', session.id);
 
         // Step 2: Redirect the already-open popup to the picker URL
         const pickerUrl = session.pickerUri;
@@ -116,30 +114,25 @@ export const openGooglePhotoPicker = async (oauthToken) => {
             const poll = async () => {
                 try {
                     if (Date.now() - startTime > TIMEOUT) {
-                        console.log('Picker session timed out');
-                        try { popup.close(); } catch (e) { /* ignore COOP errors */ }
+                        try { popup.close(); } catch { /* ignore COOP errors */ }
                         resolve(null);
                         return;
                     }
 
                     const updatedSession = await getPickerSession(oauthToken, session.id);
-                    console.log('Poll result - mediaItemsSet:', updatedSession.mediaItemsSet);
 
                     if (updatedSession.mediaItemsSet) {
-                        console.log('User finished selection! Fetching media items...');
-                        try { popup.close(); } catch (e) { /* ignore COOP errors */ }
+                        try { popup.close(); } catch { /* ignore COOP errors */ }
 
                         const items = await listPickedMediaItems(oauthToken, session.id);
-                        console.log('Selected media items:', items.length, items);
                         resolve(items);
                         return;
                     }
 
                     setTimeout(poll, POLL_INTERVAL);
                 } catch (error) {
-                    console.error('Polling error:', error);
                     if (Date.now() - startTime > TIMEOUT) {
-                        try { popup.close(); } catch (e) { /* ignore */ }
+                        try { popup.close(); } catch { /* ignore */ }
                         reject(error);
                     } else {
                         setTimeout(poll, POLL_INTERVAL);
@@ -151,7 +144,7 @@ export const openGooglePhotoPicker = async (oauthToken) => {
         });
     } catch (error) {
         // If session creation fails, close the popup we already opened
-        try { popup.close(); } catch (e) { /* ignore */ }
+        try { popup.close(); } catch { /* ignore */ }
         throw error;
     }
 };

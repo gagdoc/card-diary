@@ -1,16 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { Camera, MapPin, Cloud, Hash, ChevronLeft, Bold, Italic, Underline, AlignLeft, Send, Trash2, X, Plus, Calendar, Star } from 'lucide-react';
+import { Camera, ChevronLeft, Send, X, Plus, Star } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useDiary } from '../../context/DiaryContext';
-import { useAuth } from '../../context/AuthContext';
 import { DriveImage } from '../common/DriveImage';
 import { GooglePhotoPicker } from '../common/GooglePhotoPicker';
 
-
 export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
-    // This component now acts as a "Daily Feed"
     const [date, setDate] = useState(initialDate);
     const dateInputRef = useRef(null);
 
@@ -20,22 +17,19 @@ export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
             setDate(newDate);
         }
     };
+
     const { getEntriesByDate, getEntriesByMonth, addEntry, updateEntry, deleteEntry } = useDiary();
 
-    // State for the NEW entry input
     const [newImages, setNewImages] = useState([]);
     const [newContent, setNewContent] = useState('');
-    const [newTitle, setNewTitle] = useState(''); // Optional title for small moments
+    const [newTitle, setNewTitle] = useState('');
 
-
-    // Editing State
     const [editingId, setEditingId] = useState(null);
     const [editContent, setEditContent] = useState('');
     const [editTitle, setEditTitle] = useState('');
     const [editImages, setEditImages] = useState([]);
 
-    // Fetch entries for this day
-    const entries = getEntriesByDate(date).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const entries = getEntriesByDate(date).sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
 
     const handleImageUpload = (e, isEditing = false) => {
         const files = Array.from(e.target.files);
@@ -52,7 +46,6 @@ export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
             };
             reader.readAsDataURL(file);
         });
-        // Clear input value to allow re-uploading the same file if needed (though difficult with multiple)
         e.target.value = '';
     };
 
@@ -74,34 +67,24 @@ export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
 
     const handleSave = () => {
         if (!newContent.trim() && newImages.length === 0) return;
-
-        try {
-            addEntry({
-                date: date.toISOString(),
-                images: newImages,
-                imageUrl: newImages.length > 0 ? newImages[0] : null, // Backward compatibility
-                title: newTitle,
-                content: newContent,
-                tags: []
-            });
-
-            // Reset input fields
-            setNewImages([]);
-            setNewContent('');
-            setNewTitle('');
-        } catch (error) {
-            console.error('Error saving entry:', error);
-            alert('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
-        }
+        addEntry({
+            date: date.toISOString(),
+            images: newImages,
+            imageUrl: newImages.length > 0 ? newImages[0] : null,
+            title: newTitle,
+            content: newContent,
+            tags: []
+        });
+        setNewImages([]);
+        setNewContent('');
+        setNewTitle('');
     };
 
     const startEditing = (entry) => {
         setEditingId(entry.id);
         setEditTitle(entry.title || '');
         setEditContent(entry.content || '');
-        // Initialize editImages from entry.images OR entry.imageUrl
-        const existingImages = entry.images || (entry.imageUrl ? [entry.imageUrl] : []);
-        setEditImages(existingImages);
+        setEditImages(entry.images || (entry.imageUrl ? [entry.imageUrl] : []));
     };
 
     const cancelEditing = () => {
@@ -111,299 +94,227 @@ export const DiaryEditor = ({ initialDate = new Date(), onClose }) => {
         setEditImages([]);
     };
 
-    const toggleCover = (entry) => {
-        const entryDate = new Date(entry.date);
-        const monthEntries = getEntriesByMonth(entryDate.getFullYear(), entryDate.getMonth());
-
-        // If this entry is already cover, remove it
-        if (entry.isCover) {
-            updateEntry(entry.id, { isCover: false });
-        } else {
-            // Remove cover from any other entry in the same month
-            monthEntries.forEach(e => {
-                if (e.isCover) {
-                    updateEntry(e.id, { isCover: false });
-                }
-            });
-            // Set this entry as cover
-            updateEntry(entry.id, { isCover: true });
-        }
-    };
-
     const saveEditing = (id) => {
         updateEntry(id, {
             title: editTitle,
             content: editContent,
             images: editImages,
-            imageUrl: editImages.length > 0 ? editImages[0] : null // Backward compatibility
+            imageUrl: editImages.length > 0 ? editImages[0] : null
         });
         setEditingId(null);
         setEditImages([]);
     };
 
+    const toggleCover = (entry) => {
+        const monthEntries = getEntriesByMonth(new Date(entry.date).getFullYear(), new Date(entry.date).getMonth());
+        if (entry.isCover) {
+            updateEntry(entry.id, { isCover: false });
+        } else {
+            monthEntries.forEach(e => e.isCover && updateEntry(e.id, { isCover: false }));
+            updateEntry(entry.id, { isCover: true });
+        }
+    };
+
     const renderImageCarousel = (images, isEditingMode = false, isInputArea = false) => {
         if (!images || images.length === 0) return null;
-
         return (
-            <div className={images.length === 1 && !isInputArea ? "" : "flex gap-3 overflow-x-auto pb-4 snap-x scrollbar-hide py-2"}>
+            <div className="flex gap-4 overflow-x-auto pb-6 pt-2 snap-x scrollbar-hide">
                 {images.map((img, index) => (
-                    <div key={index} className={cn(
-                        "relative group",
-                        images.length === 1 && !isInputArea ? "w-full" : "flex-shrink-0 snap-center"
-                    )}>
+                    <div key={index} className="relative group flex-shrink-0 snap-center">
                         <div className={cn(
-                            "rounded-xl overflow-hidden border border-gray-200 shadow-sm",
-                            isInputArea ? "w-24 h-24" : (images.length === 1 ? "w-full h-72" : "w-64 h-64")
+                            "rounded-3xl overflow-hidden border border-gray-100 shadow-sm",
+                            isInputArea ? "w-28 h-28" : "w-64 h-64 sm:w-80 sm:h-80"
                         )}>
-                            <DriveImage
-                                src={img}
-                                alt={`Slide ${index}`}
-                                className="w-full h-full object-cover"
-                            />
+                            <DriveImage src={img} alt={`Moment ${index}`} className="w-full h-full object-cover" />
                         </div>
-
                         {(isEditingMode || isInputArea) && (
                             <button
                                 onClick={() => removeImage(index, isEditingMode)}
-                                className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110"
+                                className="absolute -top-2 -right-2 bg-black text-white rounded-full p-2 shadow-lg transform hover:scale-110 transition-transform"
                             >
                                 <X className="w-3 h-3" />
                             </button>
                         )}
-
-                        {!isInputArea && images.length > 1 && (
-                            <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                {index + 1}/{images.length}
-                            </div>
-                        )}
                     </div>
                 ))}
-
-                {/* Add Button in Carousel (Only for editing/input) */}
-                {(isEditingMode || isInputArea) && (
-                    <label className={cn(
-                        "flex-shrink-0 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer snap-center",
-                        isInputArea ? "w-24 h-24" : "w-24 h-64"
-                    )}>
-                        <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                        <span className="text-xs text-gray-500 font-medium">Add</span>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => handleImageUpload(e, isEditingMode)}
-                        />
-                    </label>
-                )}
             </div>
         );
     };
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 bg-gray-50 flex flex-col overflow-hidden"
+            exit={{ opacity: 0, scale: 0.98 }}
+            className="fixed inset-0 z-50 bg-[#f8f9fa] flex flex-col overflow-hidden"
         >
             {/* Header */}
-            <header className="px-6 py-4 bg-white border-b border-gray-200 flex items-center justify-between z-10">
-                <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                    <ChevronLeft className="w-6 h-6" />
+            <header className="px-8 py-6 bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between z-10">
+                <button
+                    onClick={onClose}
+                    className="p-3 hover:bg-gray-100 rounded-2xl transition-all shadow-sm border border-transparent hover:border-gray-200 group"
+                >
+                    <ChevronLeft className="w-6 h-6 text-gray-400 group-hover:text-gray-900" />
                 </button>
-                <div className="text-center relative">
-                    <div className="flex items-center gap-2 justify-center">
-                        <h2 className="text-xl font-bold text-gray-900">{format(date, 'MMMM d, yyyy')}</h2>
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <p className="text-xs text-gray-500 font-medium">{format(date, 'EEEE')}</p>
-                    {/* Transparent date input overlay for cross-browser compatibility */}
+                <div className="text-center relative cursor-pointer group">
+                    <h2 className="text-2xl font-black font-outfit tracking-tighter text-gray-900 leading-none">
+                        {format(date, 'MMMM d')}
+                    </h2>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 mt-1">
+                        {date.getFullYear() === new Date().getFullYear() ? format(date, 'EEEE') : format(date, 'EEEE, yyyy')}
+                    </p>
                     <input
                         ref={dateInputRef}
                         type="date"
                         value={format(date, 'yyyy-MM-dd')}
                         onChange={handleDateChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        style={{ WebkitAppearance: 'none' }}
                     />
                 </div>
-                <div className="w-10" />
+                <div className="w-12 h-12" />
             </header>
 
-            {/* Main Content Area (Scrollable Feed) */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 scrollbar-hide">
-                <div className="max-w-2xl mx-auto space-y-8 pb-32">
-                    {/* Empty State */}
-                    {entries.length === 0 && (
-                        <div className="text-center py-20 opacity-50">
-                            <p>No moments recorded for this day.</p>
-                            <p className="text-sm">Start by writing something below.</p>
-                        </div>
-                    )}
-
-                    {/* Timeline Entries */}
-                    {entries.map((entry, index) => (
-                        <motion.div
-                            key={entry.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-                        >
-                            {/* Entry Header */}
-                            <div className="px-6 py-4 flex justify-between items-center border-b border-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-400">
-                                        {entry.createdAt ? format(new Date(entry.createdAt), 'h:mm a') : 'Just now'}
-                                    </span>
-
-                                </div>
-                                <div className="flex gap-2">
-                                    {editingId === entry.id ? (
-                                        <>
-                                            <button onClick={() => saveEditing(entry.id)} className="text-xs font-bold text-blue-600 hover:text-blue-700">SAVE</button>
-                                            <button onClick={cancelEditing} className="text-xs font-bold text-gray-400 hover:text-gray-600">CANCEL</button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button onClick={() => startEditing(entry)} className="text-xs font-bold text-gray-400 hover:text-blue-600">EDIT</button>
-                                            {(entry.images?.length > 0 || entry.imageUrl) && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); toggleCover(entry); }}
-                                                    className={cn(
-                                                        "transition-colors",
-                                                        entry.isCover ? "text-yellow-500" : "text-gray-300 hover:text-yellow-500"
-                                                    )}
-                                                    title={entry.isCover ? "대표 이미지 해제" : "대표 이미지로 설정"}
-                                                >
-                                                    <Star className="w-4 h-4" fill={entry.isCover ? "currentColor" : "none"} />
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => deleteEntry(entry.id)}
-                                                className="text-gray-300 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+            {/* Daily Feed */}
+            <div className="flex-1 overflow-y-auto px-6 md:px-12 py-10 scrollbar-hide">
+                <div className="max-w-3xl mx-auto space-y-12 pb-40">
+                    {entries.length === 0 ? (
+                        <div className="text-center py-32 space-y-6 opacity-30">
+                            <div className="w-24 h-24 bg-gray-100 rounded-[40px] flex items-center justify-center mx-auto">
+                                <Plus className="w-10 h-10 text-gray-300" />
                             </div>
+                            <div>
+                                <h3 className="text-xl font-bold font-outfit text-gray-400">Capture a moment</h3>
+                                <p className="text-sm font-medium">Every day has a story worth telling.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-16">
+                            {entries.map((entry, index) => (
+                                <motion.div
+                                    key={entry.id}
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                    className="group relative"
+                                >
+                                    <div className="flex gap-8 items-start">
+                                        <div className="hidden sm:flex flex-col items-center pt-2">
+                                            <div className="w-3 h-3 rounded-full border-2 border-black bg-white ring-4 ring-gray-100"></div>
+                                            <div className="w-[2px] h-full bg-gray-100 mt-2 min-h-[100px] group-last:bg-transparent"></div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-center mb-6">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                                    {entry.createdAt ? format(new Date(entry.createdAt), 'h:mm a') : format(new Date(entry.date), 'h:mm a')}
+                                                </span>
+                                                <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {editingId === entry.id ? (
+                                                        <>
+                                                            <button onClick={() => saveEditing(entry.id)} className="text-[10px] font-black text-blue-600 tracking-wider">SAVE</button>
+                                                            <button onClick={cancelEditing} className="text-[10px] font-black text-gray-400 tracking-wider">CANCEL</button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button onClick={() => startEditing(entry)} className="text-[10px] font-black text-gray-400 hover:text-gray-900 tracking-wider">EDIT</button>
+                                                            <button onClick={() => deleteEntry(entry.id)} className="text-[10px] font-black text-gray-300 hover:text-red-500 tracking-wider">DELETE</button>
+                                                            <button onClick={() => toggleCover(entry)} className={cn("transition-colors", entry.isCover ? "text-yellow-500" : "text-gray-200 hover:text-yellow-500")}>
+                                                                <Star className="w-4 h-4" fill={entry.isCover ? "currentColor" : "none"} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                            {/* Entry Content */}
-                            <div className="p-6">
-                                {editingId === entry.id ? (
-                                    <div className="flex flex-col gap-4">
-                                        <input
-                                            type="text"
-                                            value={editTitle}
-                                            onChange={(e) => setEditTitle(e.target.value)}
-                                            className="font-bold text-lg border-b border-gray-200 focus:border-blue-500 outline-none p-1"
-                                            placeholder="Title"
-                                        />
-                                        <textarea
-                                            value={editContent}
-                                            onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full resize-none border rounded-lg p-3 focus:ring-2 focus:ring-blue-100 outline-none min-h-[100px]"
-                                            placeholder="Content"
-                                        />
-
-                                        {/* Image Editing Carousel */}
-                                        <div className="mt-2">
-                                            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Photos</p>
-
-                                            {editImages.length === 0 ? (
-                                                <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer w-32 h-32">
-                                                    <Camera className="w-6 h-6 text-gray-400 mb-2" />
-                                                    <span className="text-xs text-gray-500 font-medium">Add Photo</span>
-                                                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e, true)} />
-                                                </label>
+                                            {editingId === entry.id ? (
+                                                <div className="space-y-4 bg-white p-8 rounded-[32px] premium-shadow border border-gray-100">
+                                                    <input
+                                                        type="text"
+                                                        value={editTitle}
+                                                        onChange={(e) => setEditTitle(e.target.value)}
+                                                        className="w-full text-2xl font-black font-outfit border-none focus:ring-0 p-0 text-gray-900 placeholder:text-gray-200"
+                                                        placeholder="Moment Title"
+                                                    />
+                                                    <textarea
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                        className="w-full text-lg leading-relaxed text-gray-600 border-none focus:ring-0 p-0 min-h-[120px] resize-none placeholder:text-gray-200"
+                                                        placeholder="What happened?"
+                                                    />
+                                                    {renderImageCarousel(editImages, true, false)}
+                                                    <div className="flex gap-3 pt-4 border-t border-gray-50">
+                                                        <label className="p-3 bg-gray-50 hover:bg-gray-100 rounded-2xl cursor-pointer transition-colors text-gray-400">
+                                                            <Camera className="w-5 h-5" />
+                                                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e, true)} />
+                                                        </label>
+                                                        <GooglePhotoPicker onSelect={(photos) => handleGooglePhotoSelect(photos, true)} className="bg-gray-50 text-gray-400" />
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                renderImageCarousel(editImages, true, false)
+                                                <div className="space-y-6">
+                                                    {entry.title && (
+                                                        <h3 className="text-3xl font-black font-outfit text-gray-900 tracking-tight leading-tight">{entry.title}</h3>
+                                                    )}
+                                                    <p className="text-lg leading-relaxed text-gray-600 whitespace-pre-wrap">{entry.content}</p>
+                                                    {renderImageCarousel(entry.images || (entry.imageUrl ? [entry.imageUrl] : []), false, false)}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-                                ) : (
-                                    <>
-                                        {entry.title && (
-                                            <h3 className="text-lg font-bold text-gray-900 mb-2">{entry.title}</h3>
-                                        )}
-                                        <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{entry.content}</p>
-
-                                        {/* View Mode Carousel */}
-                                        {(entry.images && entry.images.length > 0) ? (
-                                            <div className="mt-6">
-                                                {renderImageCarousel(entry.images, false, false)}
-                                            </div>
-                                        ) : (
-                                            /* Backward Compatibility for single imageUrl */
-                                            entry.imageUrl && (
-                                                <div className="mt-6">
-                                                    {renderImageCarousel([entry.imageUrl], false, false)}
-                                                </div>
-                                            )
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </motion.div>
-                    ))}
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Input Area (Sticky Bottom) */}
-            <div className="bg-white border-t border-gray-200 p-4 md:p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20">
-                <div className="max-w-2xl mx-auto flex flex-col gap-4">
-
-
-                    {/* Image Preview Carousel in Input */}
+            {/* Premium Input Bar */}
+            <div className="absolute bottom-10 inset-x-0 px-6 z-20">
+                <div className="max-w-3xl mx-auto">
                     <AnimatePresence>
                         {newImages.length > 0 && (
                             <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="w-full overflow-hidden"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                className="mb-4 bg-white/80 backdrop-blur-3xl p-4 rounded-[32px] border border-white/20 shadow-2xl"
                             >
                                 {renderImageCarousel(newImages, false, true)}
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    <div className="flex gap-4 items-end relative">
-                        <GooglePhotoPicker
-                            onSelect={(photos) => handleGooglePhotoSelect(photos, false)}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-600"
-                        />
-                        <label className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full cursor-pointer transition-colors text-gray-600 flex-shrink-0">
-                            <Camera className="w-6 h-6" />
-                            <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e, false)} />
-                        </label>
-
-                        <div className="flex-1 bg-gray-50 rounded-2xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all px-4 py-3 relative">
+                    <div className="bg-white rounded-[32px] p-2 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col group focus-within:ring-2 ring-black/5 transition-all">
+                        <div className="px-6 pt-4 pb-2">
                             <input
                                 type="text"
-                                placeholder="Title (optional)"
-                                className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-900 mb-1 placeholder-gray-400"
                                 value={newTitle}
                                 onChange={(e) => setNewTitle(e.target.value)}
+                                className="w-full border-none focus:ring-0 p-0 text-lg font-bold font-outfit text-gray-900 placeholder:text-gray-300"
+                                placeholder="Give this moment a name..."
                             />
                             <textarea
-                                placeholder="Write your moment..."
-                                className="w-full bg-transparent border-none focus:ring-0 resize-none text-gray-700 placeholder-gray-400 min-h-[60px]"
                                 value={newContent}
                                 onChange={(e) => setNewContent(e.target.value)}
+                                className="w-full border-none focus:ring-0 p-0 text-gray-600 mt-2 min-h-[80px] resize-none leading-relaxed placeholder:text-gray-300"
+                                placeholder="Describe what's on your mind..."
                             />
                         </div>
-
-                        <button
-                            onClick={handleSave}
-                            disabled={!newContent.trim() && newImages.length === 0}
-                            className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-full transition-all shadow-md hover:shadow-lg flex-shrink-0"
-                        >
-                            <Send className="w-6 h-6" />
-                        </button>
+                        <div className="flex items-center justify-between p-2 mt-2 bg-gray-50/50 rounded-[24px]">
+                            <div className="flex items-center gap-1 pl-2">
+                                <label className="p-3 hover:bg-white rounded-2xl cursor-pointer transition-all text-gray-400 hover:text-gray-900">
+                                    <Camera className="w-6 h-6" />
+                                    <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleImageUpload(e, false)} />
+                                </label>
+                                <GooglePhotoPicker onSelect={(photos) => handleGooglePhotoSelect(photos, false)} className="hover:bg-white text-gray-400 hover:text-gray-900" />
+                            </div>
+                            <button
+                                onClick={handleSave}
+                                disabled={!newContent.trim() && newImages.length === 0}
+                                className="h-14 w-14 bg-black text-white rounded-[20px] flex items-center justify-center hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-300 transition-all shadow-lg active:scale-95"
+                            >
+                                <Send className="w-6 h-6" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

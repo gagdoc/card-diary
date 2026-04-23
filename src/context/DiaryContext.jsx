@@ -5,6 +5,7 @@ import { loadFromDrive, saveToDrive as saveJsonToDrive, saveImageToDrive, ensure
 
 const DiaryContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useDiary = () => useContext(DiaryContext);
 
 export const DiaryProvider = ({ children }) => {
@@ -90,7 +91,6 @@ export const DiaryProvider = ({ children }) => {
                 const newStr = JSON.stringify(processedEntries);
 
                 if (currentStr !== newStr) {
-                    console.log('Images uploaded, updating local state...');
                     setEntries(processedEntries);
                     // The useEffect will run again, but this time no data:image, so it proceeds to saveJsonToDrive
                     return;

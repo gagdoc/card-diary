@@ -1,23 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { googleLogout, useGoogleLogin } from '@react-oauth/google';
 
 const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-
-    // Load user from local storage on mount
-    useEffect(() => {
+    const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem('user');
-        const storedToken = localStorage.getItem('google_access_token');
-        if (storedUser && storedToken) {
-            setUser(JSON.parse(storedUser));
-            setToken(storedToken);
-        }
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+    const [token, setToken] = useState(() => localStorage.getItem('google_access_token'));
+
+    // We no longer need this useEffect for initial load
 
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
@@ -42,8 +38,25 @@ export const AuthProvider = ({ children }) => {
         scope: 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
     });
 
+    const mockLogin = () => {
+        const mockUser = {
+            name: 'Guest User',
+            email: 'guest@example.com',
+            picture: 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'
+        };
+        const mockToken = 'mock-google-access-token';
+        
+        console.log('Mock Login Success');
+        setUser(mockUser);
+        setToken(mockToken);
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('google_access_token', mockToken);
+    };
+
     const logout = () => {
-        googleLogout();
+        if (token !== 'mock-google-access-token') {
+            googleLogout();
+        }
         setUser(null);
         setToken(null);
         localStorage.removeItem('user');
@@ -51,7 +64,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout }}>
+        <AuthContext.Provider value={{ user, token, login, mockLogin, logout }}>
             {children}
         </AuthContext.Provider>
     );
