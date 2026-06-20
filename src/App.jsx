@@ -5,7 +5,7 @@ import { DiaryEditor } from './components/diary/DiaryEditor';
 import { MonthCard } from './components/diary/MonthCard';
 import { MonthDetail } from './components/diary/MonthDetail';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ChevronLeft, ChevronRight, Plus, LogIn, LogOut, Download, Upload } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Plus, LogIn, LogOut, Download, Upload, RefreshCw } from 'lucide-react';
 
 const MainView = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -31,7 +31,7 @@ const MainView = () => {
   }, [selectedYear]);
 
   const { entries, getEntriesByMonth, importEntries } = useDiary();
-  const { user, login, mockLogin, logout } = useAuth();
+  const { user, authState, login, mockLogin, logout } = useAuth();
 
   const months = Array.from({ length: 12 }, (_, i) => i);
 
@@ -159,27 +159,56 @@ const MainView = () => {
             <Search className="w-6 h-6" />
           </button>
 
-          {user ? (
+          {/* ── Authenticated ── */}
+          {authState === 'authenticated' && user && (
             <div className="flex items-center gap-2 sm:gap-4 bg-white/80 backdrop-blur-xl border border-gray-100 rounded-[20px] sm:rounded-[24px] p-1.5 sm:p-2 sm:pr-5 shadow-2xl shadow-gray-200/50 group min-w-0">
               <img src={user.picture} alt={user.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl border border-gray-100 shadow-sm" title={user.name} />
               <div className="hidden sm:flex flex-col">
                 <span className="text-xs font-black text-gray-900 leading-none">{user.name}</span>
                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Prime Member</span>
               </div>
-              <button onClick={logout} className="sm:ml-2 p-2 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-xl transition-all" title="Logout">
+              <button onClick={logout} className="sm:ml-2 p-2 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-xl transition-all" title="로그아웃">
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
-          ) : (
+          )}
+
+          {/* ── Needs re-auth (token expired but user info preserved) ── */}
+          {authState === 'needs_reauth' && user && (
+            <div className="flex items-center gap-2 sm:gap-2 bg-white/80 backdrop-blur-xl border border-orange-200 rounded-[20px] sm:rounded-[24px] p-1.5 sm:p-2 sm:pr-4 shadow-2xl shadow-orange-100/50 min-w-0">
+              <div className="relative flex-shrink-0">
+                <img src={user.picture} alt={user.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl border border-orange-200 shadow-sm opacity-80" title={user.name} />
+                {/* Reconnecting pulse ring */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-orange-400 rounded-full border-2 border-white animate-pulse" />
+              </div>
+              <div className="hidden sm:flex flex-col mr-1">
+                <span className="text-xs font-black text-gray-900 leading-none">{user.name}</span>
+                <span className="text-[9px] font-bold text-orange-400 uppercase tracking-widest mt-1">재연결 중...</span>
+              </div>
+              <button
+                onClick={() => login()}
+                title="다시 연결"
+                className="p-2 bg-orange-50 hover:bg-orange-100 text-orange-500 rounded-xl transition-all active:scale-95"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <button onClick={logout} className="p-2 hover:bg-red-50 text-gray-300 hover:text-red-400 rounded-xl transition-all" title="로그아웃">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ── Fully unauthenticated ── */}
+          {authState === 'unauthenticated' && (
             <div className="flex items-center gap-2 sm:gap-3">
-              <button 
-                onClick={() => mockLogin()} 
+              <button
+                onClick={() => mockLogin()}
                 className="hidden sm:flex items-center gap-2 px-6 py-4 bg-white/80 backdrop-blur-xl border border-gray-100 rounded-[24px] hover:bg-white text-[13px] font-black text-gray-700 transition-all shadow-xl shadow-gray-200/20 hover:shadow-gray-200/50 hover:-translate-y-0.5"
               >
                 <span>GUEST ACCESS</span>
               </button>
-              <button 
-                onClick={() => login()} 
+              <button
+                onClick={() => login()}
                 className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-black text-white rounded-[20px] sm:rounded-[24px] hover:bg-gray-800 text-[12px] sm:text-[13px] font-black transition-all shadow-2xl shadow-black/20 hover:shadow-black/40 hover:-translate-y-0.5 active:scale-95"
               >
                 <LogIn className="w-4 h-4 sm:w-5 sm:h-5" />
