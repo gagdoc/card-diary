@@ -19,3 +19,8 @@ dist/
 # Logs
 *.log
 npm-debug.log*
+.vercel
+
+# Claude Harness Output
+_workspace/
+

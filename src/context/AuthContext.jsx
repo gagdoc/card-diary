@@ -13,13 +13,10 @@ export const AuthProvider = ({ children }) => {
     });
     const [token, setToken] = useState(() => localStorage.getItem('google_access_token'));
 
-    // We no longer need this useEffect for initial load
-
     const login = useGoogleLogin({
         onSuccess: async (tokenResponse) => {
             console.log('Login Success:', tokenResponse);
-            setToken(tokenResponse.access_token);
-            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            setUser(null);
 
             // Fetch user info
             try {
@@ -28,14 +25,28 @@ export const AuthProvider = ({ children }) => {
                 }).then(res => res.json());
 
                 console.log('User Info:', userInfo);
+                setToken(tokenResponse.access_token);
                 setUser(userInfo);
+                localStorage.setItem('google_access_token', tokenResponse.access_token);
                 localStorage.setItem('user', JSON.stringify(userInfo));
             } catch (error) {
                 console.error('Failed to fetch user info:', error);
+                setToken(null);
+                setUser(null);
+                localStorage.removeItem('google_access_token');
+                localStorage.removeItem('user');
             }
         },
         onError: error => console.log('Login Failed:', error),
-        scope: 'https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+        scope: [
+            'openid',
+            'email',
+            'profile',
+            'https://www.googleapis.com/auth/drive.file',
+            'https://www.googleapis.com/auth/drive.readonly',
+            'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
+        ].join(' '),
+        include_granted_scopes: true,
     });
 
     const mockLogin = () => {

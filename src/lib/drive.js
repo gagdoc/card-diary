@@ -184,7 +184,7 @@ export const ensureImagesFolder = async (token) => {
 // Save Image to Drive
 export const saveImageToDrive = async (token, base64Image, existingFolderId = null) => {
     if (token === 'mock-google-access-token') {
-        return `mock-image-${Date.now()}`;
+        return base64Image;
     }
     try {
         let folderId = existingFolderId;
@@ -245,6 +245,32 @@ export const getImageFromDrive = async (token, fileId) => {
     }
 }
 
+export const getDriveImageAsDataUrl = async (token, fileId) => {
+    if (token === 'mock-google-access-token') return null;
+    try {
+        const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        if (!response.ok) throw new Error('Failed to download Drive image');
+
+        const blob = await response.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.error("Error downloading Drive image", e);
+        return null;
+    }
+}
+
 // Helper: Get file metadata (e.g., thumbnailLink)
 export const getFileMetadata = async (token, fileId, fields = 'id, name, thumbnailLink, webContentLink') => {
     if (token === 'mock-google-access-token') return { id: fileId, name: 'mock-file' };
@@ -262,6 +288,43 @@ export const getFileMetadata = async (token, fileId, fields = 'id, name, thumbna
     } catch (e) {
         console.error("Error getting file metadata", e);
         return null;
+    }
+}
+
+export const listDriveImages = async (token, pageToken = null) => {
+    if (token === 'mock-google-access-token') {
+        return { files: [], nextPageToken: null };
+    }
+    try {
+        const params = new URLSearchParams({
+            q: "mimeType contains 'image/' and trashed=false",
+            pageSize: '24',
+            orderBy: 'modifiedTime desc',
+            fields: 'nextPageToken, files(id, name, mimeType, thumbnailLink, modifiedTime)',
+        });
+
+        if (pageToken) {
+            params.set('pageToken', pageToken);
+        }
+
+        const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files?${params.toString()}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Failed to list Drive images: ${response.status} ${JSON.stringify(errorData)}`);
+        }
+
+        return await response.json();
+    } catch (e) {
+        console.error("Error listing Drive images", e);
+        return { files: [], nextPageToken: null, error: e.message };
     }
 }
 

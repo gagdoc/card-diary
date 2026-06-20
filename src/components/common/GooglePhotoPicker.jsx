@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { openGooglePhotoPicker } from '../../lib/picker';
 import { Image as ImageIcon, Loader, X, Smartphone } from 'lucide-react';
 
-export const GooglePhotoPicker = ({ onSelect, className }) => {
+export const GooglePhotoPicker = ({ onSelect, className, disabled = false }) => {
     const { token } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showPopupGuide, setShowPopupGuide] = useState(false);
@@ -11,6 +11,8 @@ export const GooglePhotoPicker = ({ onSelect, className }) => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     const handlePick = async () => {
+        if (disabled) return;
+
         if (!token) {
             alert("먼저 Google 로그인을 해주세요.");
             return;
@@ -81,14 +83,14 @@ export const GooglePhotoPicker = ({ onSelect, className }) => {
         <>
             <button
                 onClick={handlePick}
-                disabled={loading}
+                disabled={loading || disabled}
                 className={`p-3 bg-gray-100 hover:bg-gray-200 rounded-full cursor-pointer transition-colors text-gray-600 flex-shrink-0 ${className}`}
                 title="Google 포토에서 선택"
             >
                 {loading ? (
-                    <Loader className="w-6 h-6 animate-spin" />
+                    <Loader className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
                 ) : (
-                    <ImageIcon className="w-6 h-6" />
+                    <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 )}
             </button>
 
@@ -165,4 +167,3 @@ export const GooglePhotoPicker = ({ onSelect, className }) => {
         </>
     );
 };
-

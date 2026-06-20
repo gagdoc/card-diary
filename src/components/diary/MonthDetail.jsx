@@ -1,137 +1,116 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { X, Calendar, MapPin, Smile, Cloud } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { X, Calendar, Plus } from 'lucide-react';
 import { useDiary } from '../../context/DiaryContext';
 import { DriveImage } from '../common/DriveImage';
 
 export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
     const { getEntriesByMonth } = useDiary();
-    const entries = getEntriesByMonth(year, month);
-
-    // Group entries by date
-    const entriesByDate = entries.reduce((acc, entry) => {
-        const dateKey = format(new Date(entry.date), 'yyyy-MM-dd');
-        if (!acc[dateKey]) {
-            acc[dateKey] = [];
-        }
-        acc[dateKey].push(entry);
-        return acc;
-    }, {});
-
-    // Create array of unique dates, sorted descending
-    const sortedDates = Object.keys(entriesByDate).sort((a, b) => new Date(b) - new Date(a));
+    const monthEntries = getEntriesByMonth(year, month);
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-0 z-40 bg-gray-50/95 backdrop-blur-sm flex flex-col overflow-hidden"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-white/95 backdrop-blur-3xl shadow-[-20px_0_50px_rgba(0,0,0,0.1)] z-30 flex flex-col border-l border-white/20"
         >
             {/* Header */}
-            <header className="px-6 py-4 flex justify-between items-center bg-white border-b border-gray-200 shadow-sm z-10">
+            <header className="p-8 pb-4 flex justify-between items-start">
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900">
-                        {format(new Date(year, month), 'MMMM yyyy')}
+                    <h2 className="text-5xl font-extrabold font-outfit tracking-tighter text-gray-900 leading-none">
+                        {format(new Date(year, month), 'M월')}
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
-                        {sortedDates.length} days recorded
+                    <p className="text-gray-500 font-medium mt-2 flex items-center gap-2">
+                        <span className="w-8 h-[2px] bg-black"></span>
+                        {year}
                     </p>
                 </div>
                 <button
                     onClick={onClose}
-                    className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                    className="p-3 hover:bg-gray-100 rounded-2xl transition-all shadow-sm border border-transparent hover:border-gray-200 group"
                 >
-                    <X className="w-6 h-6 text-gray-700" />
+                    <X className="w-6 h-6 text-gray-400 group-hover:text-gray-900" />
                 </button>
             </header>
 
-            {/* Content Grid */}
-            <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-                    {sortedDates.map((dateKey) => {
-                        const dateEntries = entriesByDate[dateKey];
-                        const count = dateEntries.length;
-                        // Use the first entry with an image, or just the first entry for preview
-                        // Check both imageUrl (legacy/single) and images array
-                        const representativeEntry = dateEntries.find(e => e.imageUrl || (e.images && e.images.length > 0)) || dateEntries[0];
-                        const entryDate = new Date(dateKey);
-
-                        // Determine the source for the image
-                        let displayImageSrc = null;
-                        if (representativeEntry.images && representativeEntry.images.length > 0) {
-                            displayImageSrc = representativeEntry.images[0];
-                        } else if (representativeEntry.imageUrl) {
-                            displayImageSrc = representativeEntry.imageUrl;
-                        }
-
-                        return (
-                            <motion.div
-                                key={dateKey}
-                                layoutId={`date-${dateKey}`}
-                                onClick={() => onEntryClick(representativeEntry)} // Passing one entry is enough to set the date in App.jsx
-                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                                className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group border border-gray-100 flex flex-col h-[320px]"
-                            >
-                                {/* Image Section */}
-                                <div className="h-48 bg-gray-100 relative overflow-hidden">
-                                    {displayImageSrc ? (
-                                        <DriveImage
-                                            src={displayImageSrc}
-                                            alt={representativeEntry.title}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 text-gray-300">
-                                            <Calendar className="w-12 h-12" />
-                                        </div>
-                                    )}
-                                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                        {format(entryDate, 'd')}
-                                    </div>
-                                    {count > 1 && (
-                                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md text-gray-800 px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-                                            +{count - 1} more
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Content Section */}
-                                <div className="p-5 flex flex-col flex-1">
-                                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1 mb-1">
-                                        {format(entryDate, 'MMMM d')}
-                                    </h3>
-                                    <p className="text-xs text-gray-400 mb-1">
-                                        {format(entryDate, 'EEEE')}
-                                    </p>
-                                    <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-1">
-                                        {representativeEntry.content || "No content..."}
-                                    </p>
-
-                                    <div className="flex items-center gap-2 text-xs text-gray-400 border-t border-gray-50 pt-3">
-                                        <span>{count} moments</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-
-                    {/* Empty State */}
-                    {sortedDates.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center opacity-60">
-                            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <Calendar className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-gray-700">No days recorded</h3>
-                            <p className="text-gray-500 max-w-xs mx-auto mt-2">
-                                Start your journey for this month.
-                            </p>
+            {/* Entry List */}
+            <div className="flex-1 overflow-y-auto px-8 py-4 scrollbar-hide">
+                {monthEntries.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-50">
+                        <div className="w-20 h-20 bg-gray-100 rounded-[32px] flex items-center justify-center">
+                            <Plus className="w-8 h-8 text-gray-300" />
                         </div>
-                    )}
-                </div>
+                        <p className="text-lg font-medium text-gray-400">No stories yet for this month.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-8 pb-20">
+                        {monthEntries
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .map((entry) => (
+                                <motion.div
+                                    key={entry.id}
+                                    layoutId={`entry-${entry.id}`}
+                                    onClick={() => onEntryClick(entry)}
+                                    className="group cursor-pointer"
+                                    whileHover={{ y: -4 }}
+                                >
+                                    <div className="flex gap-6">
+                                        <div className="flex-shrink-0 flex flex-col items-center pt-1 w-12">
+                                            <span className="text-2xl font-black font-outfit text-gray-900 leading-none">
+                                                {format(new Date(entry.date), 'dd')}
+                                            </span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">
+                                                {format(new Date(entry.date), 'EEE')}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 space-y-3">
+                                            {(entry.images?.length > 0 || entry.imageUrl) && (
+                                                <div className="relative aspect-[16/9] rounded-3xl overflow-hidden premium-shadow group-hover:premium-shadow-hover transition-all duration-500">
+                                                    <DriveImage
+                                                        src={entry.images?.[0] || entry.imageUrl}
+                                                        alt="Entry Cover"
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="space-y-1">
+                                                <h3 className="text-xl font-bold font-outfit text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                    {entry.title || 'Untitled Entry'}
+                                                </h3>
+                                                <p className="text-gray-500 line-clamp-2 text-sm leading-relaxed">
+                                                    {entry.content}
+                                                </p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2 pt-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                                <span>{format(new Date(entry.createdAt || entry.date), 'h:mm a')}</span>
+                                                {entry.location && (
+                                                    <span className="flex items-center gap-1">
+                                                        • {entry.location}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-8 h-[1px] w-full bg-gray-100 group-last:hidden"></div>
+                                </motion.div>
+                            ))}
+                    </div>
+                )}
             </div>
-        </motion.div >
+
+            {/* Bottom Actions */}
+            <div className="p-8 bg-gradient-to-t from-white via-white to-transparent">
+                <button
+                    onClick={() => onEntryClick(null)}
+                    className="w-full py-5 bg-black text-white rounded-[24px] font-bold text-lg flex items-center justify-center gap-3 shadow-2xl hover:bg-gray-800 transition-all active:scale-95"
+                >
+                    <Plus className="w-6 h-6" />
+                    Write New Story
+                </button>
+            </div>
+        </motion.div>
     );
 };
