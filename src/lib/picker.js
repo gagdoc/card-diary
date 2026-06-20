@@ -3,6 +3,15 @@
 
 const PICKER_API_BASE = 'https://photospicker.googleapis.com/v1';
 
+const checkAuth = (response) => {
+    if (response.status === 401) {
+        const err = new Error('TOKEN_EXPIRED');
+        err.status = 401;
+        throw err;
+    }
+    return response;
+};
+
 /**
  * Create a new Picker session.
  * Returns session object with pickerUri and id.
@@ -18,6 +27,7 @@ export const createPickerSession = async (oauthToken) => {
     });
 
     if (!response.ok) {
+        checkAuth(response);
         const errorData = await response.json().catch(() => ({}));
         throw new Error(`Failed to create picker session: ${response.status} ${JSON.stringify(errorData)}`);
     }
@@ -37,6 +47,7 @@ export const getPickerSession = async (oauthToken, sessionId) => {
     });
 
     if (!response.ok) {
+        checkAuth(response);
         throw new Error(`Failed to poll session: ${response.status}`);
     }
 
@@ -55,6 +66,7 @@ export const listPickedMediaItems = async (oauthToken, sessionId) => {
     });
 
     if (!response.ok) {
+        checkAuth(response);
         throw new Error(`Failed to list media items: ${response.status}`);
     }
 

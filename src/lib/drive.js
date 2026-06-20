@@ -2,6 +2,19 @@ const DRIVE_FOLDER_NAME = 'CardDiaryData';
 const DRIVE_IMAGES_FOLDER_NAME = 'CardDiaryImages';
 const DRIVE_FILE_NAME = 'diary_entries.json';
 
+/**
+ * Checks if a fetch Response is a 401 and throws a typed error so callers
+ * can surface the re-login flow.
+ */
+const checkAuth = async (response) => {
+    if (response.status === 401) {
+        const err = new Error('TOKEN_EXPIRED');
+        err.status = 401;
+        throw err;
+    }
+    return response;
+};
+
 // Helper to find our app folder
 export const findAppFolder = async (token) => {
     if (token === 'mock-google-access-token') return 'mock-folder-id';
@@ -15,12 +28,14 @@ export const findAppFolder = async (token) => {
                 },
             }
         );
+        await checkAuth(response);
         const data = await response.json();
         if (data.files && data.files.length > 0) {
             return data.files[0].id;
         }
         return null;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error finding app folder:', error);
         return null;
     }
@@ -43,17 +58,16 @@ export const createAppFolder = async (token) => {
             },
             body: JSON.stringify(metadata),
         });
+        await checkAuth(response);
         const data = await response.json();
         return data.id;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error creating app folder:', error);
         return null;
     }
 };
 
-// Helper to find images folder (inside app folder or root? Let's put in root for simplicity or inside app folder)
-// For simplicity and safety, let's keep it in root for now alongside Data folder, or we can nest it. 
-// Let's create it.
 export const findImagesFolder = async (token) => {
     if (token === 'mock-google-access-token') return 'mock-images-folder-id';
     try {
@@ -66,12 +80,14 @@ export const findImagesFolder = async (token) => {
                 },
             }
         );
+        await checkAuth(response);
         const data = await response.json();
         if (data.files && data.files.length > 0) {
             return data.files[0].id;
         }
         return null;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error finding images folder:', error);
         return null;
     }
@@ -93,9 +109,11 @@ export const createImagesFolder = async (token) => {
             },
             body: JSON.stringify(metadata),
         });
+        await checkAuth(response);
         const data = await response.json();
         return data.id;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error creating images folder:', error);
         return null;
     }
@@ -115,12 +133,14 @@ export const findDataFile = async (token, folderId) => {
                 },
             }
         );
+        await checkAuth(response);
         const data = await response.json();
         if (data.files && data.files.length > 0) {
-            return data.files[0].id; // Use the first match
+            return data.files[0].id;
         }
         return null;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error finding data file:', error);
         return null;
     }
@@ -142,6 +162,7 @@ const createFileMetadata = async (token, folderId) => {
         },
         body: JSON.stringify(metadata)
     });
+    await checkAuth(response);
     const data = await response.json();
     return data.id;
 }
@@ -156,6 +177,7 @@ const uploadFileContent = async (token, fileId, data) => {
         },
         body: JSON.stringify(data)
     });
+    await checkAuth(response);
     return response.json();
 }
 
@@ -196,11 +218,10 @@ export const saveImageToDrive = async (token, base64Image, existingFolderId = nu
         const blob = dataURLtoBlob(base64Image);
 
         const metadata = {
-            name: `img_${Date.now()}.png`, // generic name
+            name: `img_${Date.now()}.png`,
             parents: [folderId],
         };
 
-        // Mutipart upload for metadata + content
         const form = new FormData();
         form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
         form.append('file', blob);
@@ -213,9 +234,11 @@ export const saveImageToDrive = async (token, base64Image, existingFolderId = nu
             body: form
         });
 
+        await checkAuth(response);
         const data = await response.json();
         return data.id;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error("Failed to upload image", error);
         return null;
     }
@@ -223,8 +246,6 @@ export const saveImageToDrive = async (token, base64Image, existingFolderId = nu
 
 export const getImageFromDrive = async (token, fileId) => {
     if (token === 'mock-google-access-token') {
-        // In mock mode, we might just return the ID if it's already a base64 or a placeholder
-        if (fileId.startsWith('mock-image-')) return null; // Can't easily recover base64 from ID in mock mode without more complex storage
         return null;
     }
     try {
@@ -236,10 +257,12 @@ export const getImageFromDrive = async (token, fileId) => {
                 },
             }
         );
+        await checkAuth(response);
         if (!response.ok) throw new Error('Failed to fetch image');
         const blob = await response.blob();
         return URL.createObjectURL(blob);
     } catch (e) {
+        if (e.status === 401) throw e;
         console.error("Error getting image", e);
         return null;
     }
@@ -256,6 +279,7 @@ export const getDriveImageAsDataUrl = async (token, fileId) => {
                 },
             }
         );
+        await checkAuth(response);
         if (!response.ok) throw new Error('Failed to download Drive image');
 
         const blob = await response.blob();
@@ -266,6 +290,7 @@ export const getDriveImageAsDataUrl = async (token, fileId) => {
             reader.readAsDataURL(blob);
         });
     } catch (e) {
+        if (e.status === 401) throw e;
         console.error("Error downloading Drive image", e);
         return null;
     }
@@ -283,9 +308,11 @@ export const getFileMetadata = async (token, fileId, fields = 'id, name, thumbna
                 },
             }
         );
+        await checkAuth(response);
         if (!response.ok) throw new Error('Failed to fetch file metadata');
         return await response.json();
     } catch (e) {
+        if (e.status === 401) throw e;
         console.error("Error getting file metadata", e);
         return null;
     }
@@ -316,6 +343,8 @@ export const listDriveImages = async (token, pageToken = null) => {
             }
         );
 
+        await checkAuth(response);
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(`Failed to list Drive images: ${response.status} ${JSON.stringify(errorData)}`);
@@ -323,6 +352,7 @@ export const listDriveImages = async (token, pageToken = null) => {
 
         return await response.json();
     } catch (e) {
+        if (e.status === 401) throw e;
         console.error("Error listing Drive images", e);
         return { files: [], nextPageToken: null, error: e.message };
     }
@@ -350,6 +380,7 @@ export const saveToDrive = async (token, data) => {
             return result;
         }
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error saving to drive:', error);
     }
 };
@@ -375,7 +406,8 @@ export const loadFromDrive = async (token) => {
             }
         );
 
-        // Check if response is ok, sometimes it might be empty
+        await checkAuth(response);
+
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
@@ -383,6 +415,7 @@ export const loadFromDrive = async (token) => {
         const data = await response.json();
         return data;
     } catch (error) {
+        if (error.status === 401) throw error;
         console.error('Error loading from drive:', error);
         return null;
     }

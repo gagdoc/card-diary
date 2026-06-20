@@ -5,7 +5,7 @@ import { getDriveImageAsDataUrl, listDriveImages } from '../../lib/drive';
 import { DriveImage } from './DriveImage';
 
 export const GoogleDrivePicker = ({ onSelect, className, disabled = false }) => {
-    const { token } = useAuth();
+    const { token, handleTokenExpired } = useAuth();
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState([]);
     const [nextPageToken, setNextPageToken] = useState(null);
@@ -28,6 +28,13 @@ export const GoogleDrivePicker = ({ onSelect, className, disabled = false }) => 
             }
             setFiles(prev => append ? [...prev, ...(result.files || [])] : (result.files || []));
             setNextPageToken(result.nextPageToken || null);
+        } catch (err) {
+            if (err.status === 401) {
+                setOpen(false);
+                handleTokenExpired();
+            } else {
+                setError(err.message || '이미지를 불러오지 못했습니다.');
+            }
         } finally {
             setLoading(false);
         }
@@ -53,6 +60,13 @@ export const GoogleDrivePicker = ({ onSelect, className, disabled = false }) => 
             }
             onSelect([dataUrl]);
             setOpen(false);
+        } catch (err) {
+            if (err.status === 401) {
+                setOpen(false);
+                handleTokenExpired();
+            } else {
+                setError(err.message || '이미지를 불러오지 못했습니다.');
+            }
         } finally {
             setSelectingId(null);
         }

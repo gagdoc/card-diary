@@ -4,7 +4,7 @@ import { openGooglePhotoPicker } from '../../lib/picker';
 import { Image as ImageIcon, Loader, X, Smartphone } from 'lucide-react';
 
 export const GooglePhotoPicker = ({ onSelect, className, disabled = false }) => {
-    const { token } = useAuth();
+    const { token, handleTokenExpired } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showPopupGuide, setShowPopupGuide] = useState(false);
 
@@ -71,8 +71,18 @@ export const GooglePhotoPicker = ({ onSelect, className, disabled = false }) => 
             }
         } catch (error) {
             console.error("Google Photos Picker 오류:", error);
-            if (error.message.includes('팝업')) {
+            if (error.status === 401) {
+                handleTokenExpired();
+            } else if (error.message && error.message.includes('팝업')) {
                 setShowPopupGuide(true);
+            } else {
+                // Show a user-friendly error for session creation failures
+                const msg = error.message || '';
+                if (msg.includes('Failed to create picker session')) {
+                    alert('Google 포토 세션을 시작할 수 없습니다.\n\nGoogle Cloud Console에서 photospicker.mediaitems.readonly 스코프가 등록되어 있는지 확인해주세요.');
+                } else {
+                    alert(`Google 포토 오류: ${msg || '알 수 없는 오류가 발생했습니다.'}`);
+                }
             }
         } finally {
             setLoading(false);
