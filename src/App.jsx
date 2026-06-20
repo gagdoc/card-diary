@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DiaryProvider, useDiary } from './context/DiaryContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DiaryEditor } from './components/diary/DiaryEditor';
@@ -12,8 +12,23 @@ const MainView = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedMonth, setSelectedMonth] = useState(null);
-  const [editingEntry, setEditingEntry] = useState(null); 
+  const [editingEntry, setEditingEntry] = useState(null);
   const importInputRef = useRef(null);
+  const currentMonthRef = useRef(null);
+  const currentMonth = new Date().getMonth();
+
+  // Scroll to current month when the year matches today's year
+  useEffect(() => {
+    if (currentMonthRef.current && selectedYear === new Date().getFullYear()) {
+      setTimeout(() => {
+        currentMonthRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center',
+        });
+      }, 100);
+    }
+  }, [selectedYear]);
 
   const { entries, getEntriesByMonth, importEntries } = useDiary();
   const { user, login, mockLogin, logout } = useAuth();
@@ -180,7 +195,11 @@ const MainView = () => {
         {months.map((month) => {
           const monthEntries = getEntriesByMonth(selectedYear, month);
           return (
-            <div key={`${selectedYear}-${month}`} className="snap-center">
+            <div
+              key={`${selectedYear}-${month}`}
+              className="snap-center"
+              ref={month === currentMonth ? currentMonthRef : null}
+            >
               <MonthCard
                 year={selectedYear}
                 month={month}
