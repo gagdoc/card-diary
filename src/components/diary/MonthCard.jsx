@@ -47,7 +47,7 @@ export const MonthCard = ({ year, month, entries, isSelected, onClick }) => {
                     <DriveImage
                         src={bgImage}
                         alt="Month Background"
-                        className="absolute inset-0 w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover object-top"
                     />
                 ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-blue-100" />

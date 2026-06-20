@@ -185,6 +185,26 @@ export const DiaryProvider = ({ children }) => {
         setEntries(prev => prev.filter(entry => entry.id !== id));
     };
 
+    /**
+     * Toggle the "cover" entry for a given month.
+     * Clicking again on the current cover un-sets it (toggle).
+     */
+    const setCoverEntry = (entryId, year, month) => {
+        markDirty();
+        setEntries(prev => prev.map(entry => {
+            const entryDate = new Date(entry.date);
+            const isSameMonth =
+                entryDate.getFullYear() === year &&
+                entryDate.getMonth() === month;
+
+            if (!isSameMonth) return entry;
+
+            // Toggle: clicking the current cover un-sets it
+            const isCurrentCover = entry.id === entryId;
+            return { ...entry, isCover: isCurrentCover ? !entry.isCover : false };
+        }));
+    };
+
     const importEntries = (incomingEntries) => {
         if (!Array.isArray(incomingEntries)) return false;
 
@@ -223,7 +243,7 @@ export const DiaryProvider = ({ children }) => {
     };
 
     return (
-        <DiaryContext.Provider value={{ entries, addEntry, updateEntry, deleteEntry, importEntries, getEntriesByMonth, getEntriesByDate, syncStatus, syncError, lastSavedAt, isLoaded }}>
+        <DiaryContext.Provider value={{ entries, addEntry, updateEntry, deleteEntry, setCoverEntry, importEntries, getEntriesByMonth, getEntriesByDate, syncStatus, syncError, lastSavedAt, isLoaded }}>
             {children}
         </DiaryContext.Provider>
     );
