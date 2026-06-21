@@ -1,4 +1,23 @@
-# React + Vite
+# Card Diary
+
+사진과 글을 날짜별로 기록하고 Google Drive와 동기화하는 React/Vite 다이어리입니다.
+
+## 개발 시작
+
+```bash
+npm install
+npm run dev
+```
+
+Google OAuth 개발 origin은 `http://localhost:5174`로 고정되어 있습니다. `127.0.0.1`로 접속하면 로그인할 수 없습니다.
+
+## 개발 인수인계
+
+- [2026-06-21 개발 히스토리](docs/updates/2026-06-21.md)
+- [다이어리 읽기 패널 설계](docs/superpowers/specs/2026-06-21-diary-reading-panel-design.md)
+- [다이어리 읽기 패널 구현 계획](docs/superpowers/plans/2026-06-21-diary-reading-panel.md)
+
+## 기존 Vite 안내
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
