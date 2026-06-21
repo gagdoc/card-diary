@@ -1,5 +1,7 @@
 # 웹 배포 및 구글 로그인 설정 가이드 (Deployment Guide)
 
+현재 프로덕션 URL: **https://card-diary.vercel.app**
+
 아이폰(iOS) 등 모바일 기기에서 이 앱을 사용하려면, 앱을 인터넷 상에 배포(Deployment)해야 합니다.
 **Vercel**을 통한 무료 배포 방법과, 배포 후 **Google Cloud Console** 설정을 변경하는 방법을 안내합니다.
 
