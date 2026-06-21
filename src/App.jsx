@@ -6,6 +6,7 @@ import { MonthCard } from './components/diary/MonthCard';
 import { MonthDetail } from './components/diary/MonthDetail';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ChevronLeft, ChevronRight, Plus, LogIn, LogOut, Download, Upload, RefreshCw } from 'lucide-react';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const MainView = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -282,11 +283,13 @@ const MainView = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <DiaryProvider>
-        <MainView />
-      </DiaryProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <DiaryProvider>
+          <MainView />
+        </DiaryProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

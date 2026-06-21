@@ -22,6 +22,34 @@ const getStoredEntries = (storageKey, allowLegacyFallback = false) => {
     return [];
 };
 
+/**
+ * Strip base64 image data before saving to localStorage.
+ * iOS Safari has a ~5 MB localStorage limit — a single photo easily exceeds this.
+ * We only keep Drive-reference objects ({type:'drive', id}) and null placeholders.
+ * The full base64 is only needed in React state (in-memory) until Drive upload completes.
+ */
+const stripBase64ForStorage = (entries) => entries.map(entry => ({
+    ...entry,
+    images: (entry.images || []).map(img =>
+        typeof img === 'string' && img.startsWith('data:image')
+            ? { type: 'pending' }  // placeholder — will be uploaded to Drive
+            : img
+    ),
+    imageUrl: typeof entry.imageUrl === 'string' && entry.imageUrl.startsWith('data:')
+        ? null
+        : entry.imageUrl,
+}));
+
+/** Safe wrapper around localStorage.setItem that silently handles QuotaExceededError. */
+const safeLocalStorageSave = (key, value) => {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {
+        // QuotaExceededError — storage full (common on iOS Safari with images)
+        console.warn('localStorage quota exceeded, skipping local cache save:', e);
+    }
+};
+
 export const DiaryProvider = ({ children }) => {
     const { token, user } = useAuth();
     const isGoogleAccount = token && token !== 'mock-google-access-token';
@@ -92,7 +120,8 @@ export const DiaryProvider = ({ children }) => {
     useEffect(() => {
         if (!storageKey || !isLoaded) return;
 
-        localStorage.setItem(storageKey, JSON.stringify(entries));
+        // Strip base64 before writing to localStorage to avoid iOS QuotaExceededError
+        safeLocalStorageSave(storageKey, JSON.stringify(stripBase64ForStorage(entries)));
 
         if (isGoogleAccount) {
             const timeoutId = setTimeout(async () => {

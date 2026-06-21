@@ -66,21 +66,56 @@ export const DiaryEditor = ({ initialDate = new Date(), initialEditingEntryId = 
         });
     };
 
-    const handleImageUpload = (e, isEditing = false) => {
+    /**
+     * Compress an image file using Canvas before storing.
+     * Resizes to max 1920px on the longest side and encodes as JPEG 75%.
+     * This prevents iOS Safari memory / localStorage-quota crashes.
+     */
+    const compressImage = (file) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_SIDE = 1920;
+                let { width, height } = img;
+                if (width > MAX_SIDE || height > MAX_SIDE) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_SIDE) / width);
+                        width = MAX_SIDE;
+                    } else {
+                        width = Math.round((width * MAX_SIDE) / height);
+                        height = MAX_SIDE;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.75));
+            };
+            img.onerror = () => resolve(reader.result); // fallback to original
+            img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    const handleImageUpload = async (e, isEditing = false) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
+        e.target.value = '';
 
         const currentCount = isEditing ? editImages.length : newImages.length;
         const filesToRead = files.slice(0, Math.max(MAX_IMAGES_PER_ENTRY - currentCount, 0));
 
-        filesToRead.forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                appendImages([reader.result], isEditing);
-            };
-            reader.readAsDataURL(file);
-        });
-        e.target.value = '';
+        for (const file of filesToRead) {
+            try {
+                const compressed = await compressImage(file);
+                appendImages([compressed], isEditing);
+            } catch (err) {
+                console.error('Image compression failed:', err);
+            }
+        }
     };
 
     const removeImage = (index, isEditing = false) => {
