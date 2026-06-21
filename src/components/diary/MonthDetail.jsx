@@ -4,15 +4,18 @@ import { format } from 'date-fns';
 import { X, Plus, Star } from 'lucide-react';
 import { useDiary } from '../../context/DiaryContext';
 import { DriveImage } from '../common/DriveImage';
+import { DiaryDetail } from './DiaryDetail';
 
-export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
+export const MonthDetail = ({ year, month, onClose, onCreateEntry, onEditEntry }) => {
     const { getEntriesByMonth, setCoverEntry } = useDiary();
     const monthEntries = getEntriesByMonth(year, month);
+    const [selectedEntryId, setSelectedEntryId] = React.useState(null);
+    const selectedEntry = monthEntries.find(entry => entry.id === selectedEntryId) || null;
 
     const coverEntryId = monthEntries.find(e => e.isCover)?.id ?? null;
 
     const handleSetCover = (e, entryId) => {
-        e.stopPropagation(); // prevent opening the editor
+        e.stopPropagation(); // prevent opening the detail view
         setCoverEntry(entryId, year, month);
     };
 
@@ -24,6 +27,16 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-white/95 backdrop-blur-3xl shadow-[-20px_0_50px_rgba(0,0,0,0.1)] z-30 flex flex-col border-l border-white/20"
         >
+            {selectedEntry ? (
+                <DiaryDetail
+                    key={selectedEntry.id}
+                    entry={selectedEntry}
+                    month={month}
+                    onBack={() => setSelectedEntryId(null)}
+                    onEdit={() => onEditEntry(selectedEntry)}
+                />
+            ) : (
+                <>
             {/* Header */}
             <header className="p-8 pb-4 flex justify-between items-start">
                 <div>
@@ -36,8 +49,10 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
                     </p>
                 </div>
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="p-3 hover:bg-gray-100 rounded-2xl transition-all shadow-sm border border-transparent hover:border-gray-200 group"
+                    aria-label={`${month + 1}월 패널 닫기`}
+                    className="p-3 hover:bg-gray-100 rounded-2xl transition-all shadow-sm border border-transparent hover:border-gray-200 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
                 >
                     <X className="w-6 h-6 text-gray-400 group-hover:text-gray-900" />
                 </button>
@@ -76,10 +91,16 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
                                     <motion.div
                                         key={entry.id}
                                         layoutId={`entry-${entry.id}`}
-                                        onClick={() => onEntryClick(entry)}
-                                        className="group cursor-pointer"
+                                        onClick={() => setSelectedEntryId(entry.id)}
+                                        className="group relative cursor-pointer rounded-3xl"
                                         whileHover={{ y: -4 }}
                                     >
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedEntryId(entry.id)}
+                                            aria-label={`${format(new Date(entry.date), 'M월 d일')} ${entry.title || '제목 없는 일기'} 상세 보기`}
+                                            className="absolute inset-0 rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-4"
+                                        />
                                         <div className="flex gap-6">
                                             <div className="flex-shrink-0 flex flex-col items-center pt-1 w-12">
                                                 <span className="text-2xl font-black font-outfit text-gray-900 leading-none">
@@ -100,8 +121,10 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
 
                                                         {/* Cover Badge / Toggle Button */}
                                                         <button
+                                                            type="button"
                                                             onClick={(e) => handleSetCover(e, entry.id)}
                                                             title={isCover ? '대표 이미지 해제' : '이 달의 대표 이미지로 설정'}
+                                                            aria-label={isCover ? '월 대표 이미지 해제' : '월 대표 이미지로 설정'}
                                                             className={`absolute top-2.5 right-2.5 p-2 rounded-2xl backdrop-blur-md border transition-all duration-200 z-10
                                                                 ${isCover
                                                                     ? 'bg-amber-400/90 border-amber-300 text-white shadow-lg scale-110'
@@ -124,9 +147,11 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
                                                 {!hasImage && (
                                                     <div className="flex items-center gap-2">
                                                         <button
+                                                            type="button"
                                                             onClick={(e) => handleSetCover(e, entry.id)}
                                                             title={isCover ? '대표 해제' : '대표로 설정 (이미지 없음)'}
-                                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all
+                                                            aria-label={isCover ? '월 대표 일기 해제' : '월 대표 일기로 설정'}
+                                                            className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all
                                                                 ${isCover
                                                                     ? 'bg-amber-50 border-amber-300 text-amber-600'
                                                                     : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-amber-300 hover:text-amber-500'
@@ -167,13 +192,16 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
             {/* Bottom Actions */}
             <div className="p-8 bg-gradient-to-t from-white via-white to-transparent">
                 <button
-                    onClick={() => onEntryClick(null)}
+                    type="button"
+                    onClick={onCreateEntry}
                     className="w-full py-5 bg-black text-white rounded-[24px] font-bold text-lg flex items-center justify-center gap-3 shadow-2xl hover:bg-gray-800 transition-all active:scale-95"
                 >
                     <Plus className="w-6 h-6" />
                     Write New Story
                 </button>
             </div>
+                </>
+            )}
         </motion.div>
     );
 };
