@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Google OAuth validates the complete browser origin. Keep local
+    // development on the JavaScript origin already authorized in Console.
+    host: 'localhost',
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/api/google': {
         target: 'https://photoslibrary.googleapis.com',

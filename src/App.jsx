@@ -250,16 +250,20 @@ const MainView = () => {
       </main>
 
       {/* Floating Action Button */}
-      <motion.button
-        layoutId="fab"
-        whileHover={{ scale: 1.05, y: -5 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleCreateEntry}
-        className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-5 sm:bottom-12 sm:right-12 w-16 h-16 sm:w-20 sm:h-20 bg-black text-white rounded-[24px] sm:rounded-[32px] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-40 cursor-pointer overflow-hidden group"
-      >
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <Plus className="w-8 h-8 sm:w-10 sm:h-10 group-hover:rotate-90 transition-transform duration-500" />
-      </motion.button>
+      {selectedMonth === null && (
+        <motion.button
+          layoutId="fab"
+          whileHover={{ scale: 1.05, y: -5 }}
+          whileTap={{ scale: 0.95 }}
+          type="button"
+          onClick={handleCreateEntry}
+          aria-label="새 일기 작성"
+          className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-5 sm:bottom-12 sm:right-12 w-16 h-16 sm:w-20 sm:h-20 bg-black text-white rounded-[24px] sm:rounded-[32px] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-40 cursor-pointer overflow-hidden group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <Plus className="w-8 h-8 sm:w-10 sm:h-10 group-hover:rotate-90 transition-transform duration-500" />
+        </motion.button>
+      )}
 
       {/* Month Detail Overlay */}
       <AnimatePresence>

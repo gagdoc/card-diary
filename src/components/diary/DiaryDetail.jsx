@@ -30,7 +30,7 @@ export const DiaryDetail = ({ entry, month, onBack, onEdit }) => {
                 <button
                     type="button"
                     onClick={onBack}
-                    className="inline-flex min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-black text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                    className="inline-flex min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-black text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
                 >
                     <ArrowLeft className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{month + 1}월 목록</span>
@@ -38,7 +38,8 @@ export const DiaryDetail = ({ entry, month, onBack, onEdit }) => {
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-black px-4 py-3 text-xs font-black text-white shadow-lg transition-all hover:bg-gray-800 active:scale-95"
+                    aria-label={`${title} 수정`}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-black px-4 py-3 text-xs font-black text-white shadow-lg transition-all hover:bg-gray-800 active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300"
                 >
                     <Pencil className="h-4 w-4" />
                     수정
@@ -80,7 +81,7 @@ export const DiaryDetail = ({ entry, month, onBack, onEdit }) => {
                                             type="button"
                                             onClick={() => moveImage(-1)}
                                             aria-label="이전 사진"
-                                            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white backdrop-blur-md transition-colors hover:bg-black/65"
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white backdrop-blur-md transition-colors hover:bg-black/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         >
                                             <ChevronLeft className="h-5 w-5" />
                                         </button>
@@ -88,7 +89,7 @@ export const DiaryDetail = ({ entry, month, onBack, onEdit }) => {
                                             type="button"
                                             onClick={() => moveImage(1)}
                                             aria-label="다음 사진"
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white backdrop-blur-md transition-colors hover:bg-black/65"
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2.5 text-white backdrop-blur-md transition-colors hover:bg-black/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                                         >
                                             <ChevronRight className="h-5 w-5" />
                                         </button>
@@ -107,6 +108,7 @@ export const DiaryDetail = ({ entry, month, onBack, onEdit }) => {
                                             key={`${entry.id}-thumbnail-${index}`}
                                             onClick={() => setSelectedImageIndex(index)}
                                             aria-label={`${index + 1}번째 사진 보기`}
+                                            aria-pressed={activeImageIndex === index}
                                             className={cn(
                                                 'h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 bg-gray-100 transition-all',
                                                 activeImageIndex === index
