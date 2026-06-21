@@ -40,13 +40,19 @@ const MainView = () => {
     setSelectedMonth(month);
   };
 
-  const handleFabClick = () => {
-    setSelectedDate(new Date());
+  const handleCreateEntry = () => {
+    const today = new Date();
+    const targetMonth = selectedMonth ?? today.getMonth();
+    const targetDate = selectedYear === today.getFullYear() && targetMonth === today.getMonth()
+      ? today
+      : new Date(selectedYear, targetMonth, 1, 12);
+
+    setSelectedDate(targetDate);
     setEditingEntry(null);
     setIsEditorOpen(true);
   }
 
-  const handleEntryClick = (entry) => {
+  const handleEditEntry = (entry) => {
     setEditingEntry(entry);
     setIsEditorOpen(true);
   };
@@ -248,7 +254,7 @@ const MainView = () => {
         layoutId="fab"
         whileHover={{ scale: 1.05, y: -5 }}
         whileTap={{ scale: 0.95 }}
-        onClick={handleFabClick}
+        onClick={handleCreateEntry}
         className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-5 sm:bottom-12 sm:right-12 w-16 h-16 sm:w-20 sm:h-20 bg-black text-white rounded-[24px] sm:rounded-[32px] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-40 cursor-pointer overflow-hidden group"
       >
         <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -262,7 +268,8 @@ const MainView = () => {
             year={selectedYear}
             month={selectedMonth}
             onClose={() => setSelectedMonth(null)}
-            onEntryClick={handleEntryClick}
+            onCreateEntry={handleCreateEntry}
+            onEditEntry={handleEditEntry}
           />
         )}
       </AnimatePresence>

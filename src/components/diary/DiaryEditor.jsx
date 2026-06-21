@@ -38,6 +38,7 @@ export const DiaryEditor = ({ initialDate = new Date(), initialEditingEntryId = 
 
     const entries = getEntriesByDate(date).sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
     const canSaveNewEntry = newTitle.trim() || newContent.trim() || newImages.length > 0;
+    const isFocusedEdit = Boolean(initialEditingEntryId);
 
     React.useEffect(() => {
         return () => {
@@ -186,6 +187,7 @@ export const DiaryEditor = ({ initialDate = new Date(), initialEditingEntryId = 
         setEditTitle('');
         setEditContent('');
         setEditImages([]);
+        if (isFocusedEdit) onClose();
     };
 
     const saveEditing = (id) => {
@@ -199,6 +201,10 @@ export const DiaryEditor = ({ initialDate = new Date(), initialEditingEntryId = 
         });
         setEditingId(null);
         setEditImages([]);
+        if (isFocusedEdit) {
+            onClose();
+            return;
+        }
         showSavedFeedback();
         showCompletionModal({
             title: '수정 완료',

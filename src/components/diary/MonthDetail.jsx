@@ -4,10 +4,13 @@ import { format } from 'date-fns';
 import { X, Plus, Star } from 'lucide-react';
 import { useDiary } from '../../context/DiaryContext';
 import { DriveImage } from '../common/DriveImage';
+import { DiaryDetail } from './DiaryDetail';
 
-export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
+export const MonthDetail = ({ year, month, onClose, onCreateEntry, onEditEntry }) => {
     const { getEntriesByMonth, setCoverEntry } = useDiary();
     const monthEntries = getEntriesByMonth(year, month);
+    const [selectedEntryId, setSelectedEntryId] = React.useState(null);
+    const selectedEntry = monthEntries.find(entry => entry.id === selectedEntryId) || null;
 
     const coverEntryId = monthEntries.find(e => e.isCover)?.id ?? null;
 
@@ -24,6 +27,16 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-white/95 backdrop-blur-3xl shadow-[-20px_0_50px_rgba(0,0,0,0.1)] z-30 flex flex-col border-l border-white/20"
         >
+            {selectedEntry ? (
+                <DiaryDetail
+                    key={selectedEntry.id}
+                    entry={selectedEntry}
+                    month={month}
+                    onBack={() => setSelectedEntryId(null)}
+                    onEdit={() => onEditEntry(selectedEntry)}
+                />
+            ) : (
+                <>
             {/* Header */}
             <header className="p-8 pb-4 flex justify-between items-start">
                 <div>
@@ -76,7 +89,7 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
                                     <motion.div
                                         key={entry.id}
                                         layoutId={`entry-${entry.id}`}
-                                        onClick={() => onEntryClick(entry)}
+                                        onClick={() => setSelectedEntryId(entry.id)}
                                         className="group cursor-pointer"
                                         whileHover={{ y: -4 }}
                                     >
@@ -167,13 +180,15 @@ export const MonthDetail = ({ year, month, onClose, onEntryClick }) => {
             {/* Bottom Actions */}
             <div className="p-8 bg-gradient-to-t from-white via-white to-transparent">
                 <button
-                    onClick={() => onEntryClick(null)}
+                    onClick={onCreateEntry}
                     className="w-full py-5 bg-black text-white rounded-[24px] font-bold text-lg flex items-center justify-center gap-3 shadow-2xl hover:bg-gray-800 transition-all active:scale-95"
                 >
                     <Plus className="w-6 h-6" />
                     Write New Story
                 </button>
             </div>
+                </>
+            )}
         </motion.div>
     );
 };
