@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     // Google OAuth validates the complete browser origin. Keep local
-    // development on the JavaScript origin already authorized in Console.
+    // development on one stable JavaScript origin registered in Console.
     host: 'localhost',
-    port: 5173,
+    port: 5174,
     strictPort: true,
     proxy: {
       '/api/google': {
